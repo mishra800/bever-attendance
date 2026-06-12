@@ -16,7 +16,8 @@ const PORT = process.env.PORT || 5000;
 // Middleware — allow dev + production Netlify origin
 const allowedOrigins = [
   'http://localhost:5173',
-  process.env.FRONTEND_URL, // e.g. https://your-app.netlify.app
+  'https://attendance12.netlify.app',
+  process.env.FRONTEND_URL,
 ].filter(Boolean) as string[];
 
 app.use(cors({
