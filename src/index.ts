@@ -13,21 +13,14 @@ import notificationRoutes from './routes/notifications';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware — allow dev + production Netlify origin
-const allowedOrigins = [
-  'http://localhost:5173',
-  'https://attendance12.netlify.app',
-  process.env.FRONTEND_URL,
-].filter(Boolean) as string[];
-
+// Middleware — wide-open CORS (Netlify frontend + local dev + mobile)
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, Capacitor)
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-    callback(new Error(`CORS blocked: ${origin}`));
-  },
+  origin: true,   // reflect any origin
   credentials: true,
 }));
+
+// Ensure every preflight OPTIONS request is answered immediately
+app.options('*', cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
