@@ -6,7 +6,8 @@ import { authenticate } from '../middleware/auth';
 import { AdminUser } from '../types';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error('JWT_SECRET environment variable is not set');
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
 // POST /api/auth/login
@@ -36,7 +37,7 @@ router.post('/login', async (req: Request, res: Response) => {
 
   const token = jwt.sign(
     { id: user.id, role: user.role, email: user.email, name: user.name },
-    JWT_SECRET,
+    JWT_SECRET!,
     { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
   );
 
