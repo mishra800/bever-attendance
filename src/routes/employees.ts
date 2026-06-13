@@ -153,13 +153,21 @@ router.put('/:id', authenticate, upload.single('photo'), async (req: Request, re
 
 // DELETE /api/employees/:id — soft delete
 router.delete('/:id', authenticate, async (req: Request, res: Response) => {
-  const { error, count } = await supabase
+  // First check the employee exists
+  const { data: emp } = await supabase
+    .from('employees')
+    .select('id')
+    .eq('id', req.params.id)
+    .single();
+
+  if (!emp) { res.status(404).json({ error: 'Employee not found' }); return; }
+
+  const { error } = await supabase
     .from('employees')
     .update({ is_active: false })
     .eq('id', req.params.id);
 
   if (error) { res.status(500).json({ error: error.message }); return; }
-  if (count === 0) { res.status(404).json({ error: 'Employee not found' }); return; }
   res.json({ message: 'Employee deactivated' });
 });
 

@@ -179,20 +179,35 @@ router.get('/status/:employee_id', async (req: Request, res: Response) => {
 router.get('/today', async (_req: Request, res: Response) => {
   const today = new Date().toISOString().split('T')[0];
 
-  const { data: records, error } = await supabase
-    .from('attendance')
-    .select(`
-      id, checked_in_at, checked_out_at, method, confidence,
-      employee_id,
-      employees!inner (
-        id, name, employee_id, department, photo_url,
-        employee_shifts (
-          shifts ( name, start_time, end_time, grace_minutes )
+  const [
+    { data: records, error },
+    { count: presentCount },
+    { count: totalEmployees },
+  ] = await Promise.all([
+    supabase
+      .from('attendance')
+      .select(`
+        id, checked_in_at, checked_out_at, method, confidence,
+        employee_id,
+        employees!inner (
+          id, name, employee_id, department, photo_url,
+          employee_shifts (
+            shifts ( name, start_time, end_time, grace_minutes )
+          )
         )
-      )
-    `)
-    .eq('date', today)
-    .order('checked_in_at', { ascending: false });
+      `)
+      .eq('date', today)
+      .order('checked_in_at', { ascending: false }),
+    supabase
+      .from('attendance')
+      .select('employee_id', { count: 'exact', head: true })
+      .eq('date', today)
+      .is('checked_out_at', null),
+    supabase
+      .from('employees')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_active', true),
+  ]);
 
   if (error) { res.status(500).json({ error: error.message }); return; }
 
@@ -217,18 +232,6 @@ router.get('/today', async (_req: Request, res: Response) => {
       grace_minutes: shift?.grace_minutes,
     };
   });
-
-  // Present count = distinct employees with no checkout
-  const { count: presentCount } = await supabase
-    .from('attendance')
-    .select('employee_id', { count: 'exact', head: true })
-    .eq('date', today)
-    .is('checked_out_at', null);
-
-  const { count: totalEmployees } = await supabase
-    .from('employees')
-    .select('id', { count: 'exact', head: true })
-    .eq('is_active', true);
 
   res.json({
     date: today,
